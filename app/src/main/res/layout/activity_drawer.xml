@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="240dp"
+    android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_gravity="start"
+    android:orientation="vertical"
+    android:background="#8A9D6CF4"
+    android:id="@+id/drawer_id">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="700dp"
+        android:layout_margin="10dp"
+        android:background="#673AB7"
+        android:orientation="vertical"
+        android:layout_weight="1">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="CameraID List"
+            android:textColor="#FFFFFF"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#EBE0FF"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ListView
+                android:id="@+id/cameraIdList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contextClickable="true"
+                android:textAlignment="center" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="700dp"
+        android:layout_margin="10dp"
+        android:background="#673AB7"
+        android:orientation="vertical"
+        android:layout_weight="1">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="JPEG Size List\nSelect capture size"
+            android:textColor="#FFFFFF"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#EBE0FF"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ListView
+                android:id="@+id/SizeList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:contextClickable="true"
+                android:textAlignment="center" />
+        </LinearLayout>
+
+    </LinearLayout>
+</LinearLayout>
