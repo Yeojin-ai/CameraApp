@@ -1,5 +1,6 @@
 package com.example.cameraexample_v4;
 
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -10,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -89,14 +91,21 @@ public class MainActivity extends AppCompatActivity {
     private HandlerThread mBackgroundThread;
     private StreamConfigurationMap map;
     private long jpegsizeIndex;
+    private int cameraIndex;
+    private int mCameraFacing;  //Front or back camera state
 
     //Managing the activity lifecycle
     //onCreate(): Initialize the essential components of the activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);     // define the layout for the activity's user interface.
 
+        mCameraFacing = Camera.CameraInfo.CAMERA_FACING_BACK;   //init
+        init();
+    }   //onCreate() end
+
+    private void init(){
+        setContentView(R.layout.activity_main);     // define the layout for the activity's user interface.
         cameraIdlist = (ListView) findViewById(R.id.cameraIdList);
         ArrayList<Integer> dataCameraId = new ArrayList<>();
         ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this,R.layout.listview_camid,dataCameraId);
@@ -132,18 +141,19 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         /** Use characteristics.get() to get Key value of each information
-            - LENS_FACING : LENS_FACING_FRONT=0, LENS_FACING_BACK=1, LENS_FACING_EXTERNAL=2
-            - SCALER_STREAM_CONFIGURATION_MAP : include some information that support camera
-            -
+         - LENS_FACING : LENS_FACING_FRONT=0, LENS_FACING_BACK=1, LENS_FACING_EXTERNAL=2
+         - SCALER_STREAM_CONFIGURATION_MAP : include some information that support camera
+         -
          */
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             for (String cameraId : manager.getCameraIdList()){
                 //get some information of each cameraId using getCameraCharacteristics()
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+                //throw the key about the needed information using get()
                 dataCameraId.add(characteristics.get(CameraCharacteristics.LENS_FACING));
             }
-            devInfoView.setText(manager.getCameraCharacteristics("0").get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).toString());
+            devInfoView.setText(Arrays.toString(manager.getCameraIdList()));
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
@@ -153,6 +163,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Toast.makeText(MainActivity.this,"camera ID : "+dataCameraId.get(position),Toast.LENGTH_SHORT).show();
+                mCameraFacing = (mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK)? Camera.CameraInfo.CAMERA_FACING_FRONT:Camera.CameraInfo.CAMERA_FACING_BACK;
+                init();
                 dataSize.clear();
                 try {
                     //list up the sizes
@@ -187,11 +199,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    //SurfaceTextureListener: When the APP is resumed show camera preview.
     TextureView.SurfaceTextureListener textureListener =new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
             //Open your Camera here
-            openCamera();
+            openCamera(mCameraFacing);
         }
 
         @Override
@@ -379,6 +392,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
     }
+    //onOpened(), onCaptureCompleted()에서 호출
     protected void createCameraPreview() {
         try{
             SurfaceTexture texture = textureView.getSurfaceTexture();
@@ -407,11 +421,11 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    private void openCamera(){
+    private void openCamera(int cameraIndex){
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         Log.e(TAG,"is camera open");
         try{
-            cameraId = manager.getCameraIdList()[0];
+            cameraId = manager.getCameraIdList()[cameraIndex];
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assert map != null;
@@ -448,14 +462,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-    //onResume(): captures all user input.
+    //onResume(): captures all user input. / resume:restart
     @Override
     protected void onResume(){
         super.onResume();
         Log.e(TAG,"onResume");
         startBackgroundThread();
         if(textureView.isAvailable()){
-            openCamera();
+            openCamera(mCameraFacing);
         }else{
             textureView.setSurfaceTextureListener(textureListener);
         }
