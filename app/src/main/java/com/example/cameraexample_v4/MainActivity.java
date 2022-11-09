@@ -99,27 +99,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e(TAG,"iris...onCreate() start");
+        setContentView(R.layout.activity_main);     // define the layout for the activity's user interface.
 
         mCameraFacing = Camera.CameraInfo.CAMERA_FACING_BACK;   //init
+
         init();
+        Log.e(TAG,"iris...onCreate() end");
     }   //onCreate() end
 
     private void init(){
+        Log.e(TAG,"iris...initCamera() start");
         setContentView(R.layout.activity_main);     // define the layout for the activity's user interface.
-        cameraIdlist = (ListView) findViewById(R.id.cameraIdList);
-        ArrayList<Integer> dataCameraId = new ArrayList<>();
-        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this,R.layout.listview_camid,dataCameraId);
-        cameraIdlist.setAdapter(adapter);
-
-        jpegSizeList = (ListView) findViewById(R.id.SizeList);
-        ArrayList<String> dataSize = new ArrayList<>();
-        ArrayAdapter<String> adapter1 =new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,dataSize);
-        jpegSizeList.setAdapter(adapter1);
-
-        textureView = findViewById(R.id.texture);   //call the View that declared in activity_main.xml
-        if(textureView != null){
-            textureView.setSurfaceTextureListener(textureListener);}
-        devInfoView = findViewById(R.id.devInfo);
 
         btnTake = findViewById(R.id.btnTake);       //btnTake(id) declared in activity_main.xml
         btnGallery = findViewById(R.id.btnGallery); //btnGallery(id) declared in activity_main.xml
@@ -140,6 +131,24 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             });
+        textureView = findViewById(R.id.texture);   //call the View that declared in activity_main.xml
+        if(textureView != null){
+            textureView.setSurfaceTextureListener(textureListener);}
+
+        cameraIdlist = (ListView) findViewById(R.id.cameraIdList);
+        ArrayList<Integer> dataCameraId = new ArrayList<>();
+        ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this,R.layout.listview_camid,dataCameraId);
+        cameraIdlist.setAdapter(adapter);
+
+        jpegSizeList = (ListView) findViewById(R.id.SizeList);
+        ArrayList<String> dataSize = new ArrayList<>();
+        ArrayAdapter<String> adapter1 =new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,dataSize);
+        jpegSizeList.setAdapter(adapter1);
+
+        //devInfo
+        devInfoView = findViewById(R.id.devInfo);
+        //devInfoView.setText("hi");
+
         /** Use characteristics.get() to get Key value of each information
          - LENS_FACING : LENS_FACING_FRONT=0, LENS_FACING_BACK=1, LENS_FACING_EXTERNAL=2
          - SCALER_STREAM_CONFIGURATION_MAP : include some information that support camera
@@ -154,18 +163,20 @@ public class MainActivity extends AppCompatActivity {
                 dataCameraId.add(characteristics.get(CameraCharacteristics.LENS_FACING));
             }
             devInfoView.setText(Arrays.toString(manager.getCameraIdList()));
+
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
-        adapter.notifyDataSetChanged();
+        //adapter.notifyDataSetChanged();
 
         cameraIdlist.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Toast.makeText(MainActivity.this,"camera ID : "+dataCameraId.get(position),Toast.LENGTH_SHORT).show();
                 mCameraFacing = (mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK)? Camera.CameraInfo.CAMERA_FACING_FRONT:Camera.CameraInfo.CAMERA_FACING_BACK;
-                init();
                 dataSize.clear();
+                cameraDevice.close();
+                init();
                 try {
                     //list up the sizes
                     CameraCharacteristics characteristics = manager.getCameraCharacteristics(dataCameraId.get(position).toString());
@@ -180,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         jpegSizeList.setAdapter(adapter1);
                     }
-                    //change the lense
+                    //change the lens
 
                 }
                 catch(CameraAccessException e) {
@@ -198,13 +209,17 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+        Log.e(TAG,"iris...initCamera() end");
     }
+
     //SurfaceTextureListener: When the APP is resumed show camera preview.
     TextureView.SurfaceTextureListener textureListener =new TextureView.SurfaceTextureListener() {
         @Override
         public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surfaceTexture, int width, int height) {
+            Log.e(TAG,"iris...onSurfaceTextureAvailable start");
             //Open your Camera here
             openCamera(mCameraFacing);
+            Log.e(TAG,"iris...onSurfaceTextureAvailable end");
         }
 
         @Override
@@ -227,8 +242,10 @@ public class MainActivity extends AppCompatActivity {
         public void onOpened(@NonNull CameraDevice camera) {
             //This is called when the camera is open
             Log.e(TAG,"onOpened");
+            Log.e(TAG,"iris...onOpened start");
             cameraDevice = camera;
             createCameraPreview();
+            Log.e(TAG,"iris...onOpened end");
         }
 
         @Override
@@ -238,18 +255,23 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onError(@NonNull CameraDevice camera, int error) {
+            Log.e(TAG,"iris...onError start");
             cameraDevice.close();
             cameraDevice = null;
+            Log.e(TAG,"iris...onError end");
         }
     };
 
     protected void startBackgroundThread(){
+        Log.e(TAG,"iris...startBackgroundThread start");
         mBackgroundThread = new HandlerThread("Camera Background");
         mBackgroundThread.start();
         mBackgroundHandler = new Handler(mBackgroundThread.getLooper());
+        Log.e(TAG,"iris...startBackgroundThread end");
     }
 
     protected void stopBackgroundThread(){
+        Log.e(TAG,"iris...stopBackgroundThread start");
         mBackgroundThread.quitSafely();
         try{
             mBackgroundThread.join();
@@ -258,9 +280,11 @@ public class MainActivity extends AppCompatActivity {
         }catch (InterruptedException e){
             e.printStackTrace();
         }
+        Log.e(TAG,"iris...stopBackgroundThread end");
     }
 
     protected void takePicture(long jpegsizeIndex){
+        Log.e(TAG,"iris...takepicture start");
         int jpegsizeIndex_o = Long.valueOf(jpegsizeIndex).intValue();
         if(cameraDevice == null){
             Log.e(TAG, "cameraDevice is null");
@@ -361,6 +385,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
             }
         }
+        Log.e(TAG,"iris...takepicture end");
     }
     private static  boolean isExternalStorageReadOnly(){
         String exStorageState = Environment.getExternalStorageState();
@@ -377,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
     private boolean isStoragePermissionGranted() {
+        Log.e(TAG,"iris...isStoragePermissionGranted start");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -394,6 +420,7 @@ public class MainActivity extends AppCompatActivity {
     }
     //onOpened(), onCaptureCompleted()에서 호출
     protected void createCameraPreview() {
+        Log.e(TAG,"iris...createCameraPreview start");
         try{
             SurfaceTexture texture = textureView.getSurfaceTexture();
             assert texture != null;
@@ -420,6 +447,7 @@ public class MainActivity extends AppCompatActivity {
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
+        Log.e(TAG,"iris...createCameraPreview end");
     }
     private void openCamera(int cameraIndex){
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -429,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
             CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             assert map != null;
-            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];
+            imageDimension = map.getOutputSizes(SurfaceTexture.class)[0];       //jpeg
             if(ActivityCompat.checkSelfPermission(this,Manifest.permission.CAMERA)!= PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED){
                 ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.CAMERA,Manifest.permission.WRITE_EXTERNAL_STORAGE},REQUEST_CAMERA_PERMISSION);
                 return;
@@ -438,9 +466,10 @@ public class MainActivity extends AppCompatActivity {
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
-        Log.e(TAG,"openCamera X");
+        Log.e(TAG,"openCamera end");
     }
     protected void updatePreview(){
+        Log.e(TAG,"iris...updatePreview start");
         if(null==cameraDevice){
             Log.e(TAG, "updatePreview error, return");
         }
@@ -450,10 +479,12 @@ public class MainActivity extends AppCompatActivity {
         }catch (CameraAccessException e){
             e.printStackTrace();
         }
+        Log.e(TAG,"iris...updatePreview end");
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults){
+        Log.e(TAG,"iris...onRequestPermissionResult start");
         super.onRequestPermissionsResult(requestCode, permissions,grantResults);
         if(requestCode == REQUEST_CAMERA_PERMISSION){
             if(grantResults[0] == PackageManager.PERMISSION_DENIED){
@@ -461,6 +492,7 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         }
+        Log.e(TAG,"iris...onRequestPermissionResult end");
     }
     //onResume(): captures all user input. / resume:restart
     @Override
@@ -481,6 +513,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.e(TAG,"onPause");
         stopBackgroundThread();
+        cameraDevice.close();
         super.onPause();
     }
 }
