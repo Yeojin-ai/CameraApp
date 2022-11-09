@@ -23,6 +23,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -55,18 +56,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
+import java.util.concurrent.Semaphore;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG ="AndroidCameraApi";
     private Button btnTake;
     private Button btnGallery;
+    private Button btnRecord;
     private TextureView textureView;
-    private TextView devInfoView;
     private ListView cameraIdlist;
     private ListView jpegSizeList;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-
     static  {
         ORIENTATIONS.append(Surface.ROTATION_0,90);
         ORIENTATIONS.append(Surface.ROTATION_90,0);
@@ -91,8 +92,15 @@ public class MainActivity extends AppCompatActivity {
     private HandlerThread mBackgroundThread;
     private StreamConfigurationMap map;
     private long jpegsizeIndex;
-    private int cameraIndex;
     private int mCameraFacing;  //Front or back camera state
+
+    //Media Recording
+    private MediaRecorder mMediaRecorder;
+    private boolean mIsRecording = false;
+    private static final int REQUEST_VIDEO_PERMISSIONS = 1;
+    private static final String FRAGMENT_DIALOG = "dialog";
+    private Semaphore mCameraOpenCloseLock = new Semaphore(1);
+
 
     //Managing the activity lifecycle
     //onCreate(): Initialize the essential components of the activity
@@ -100,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.e(TAG,"iris...onCreate() start");
-        setContentView(R.layout.activity_main);     // define the layout for the activity's user interface.
 
         mCameraFacing = Camera.CameraInfo.CAMERA_FACING_BACK;   //init
 
@@ -114,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnTake = findViewById(R.id.btnTake);       //btnTake(id) declared in activity_main.xml
         btnGallery = findViewById(R.id.btnGallery); //btnGallery(id) declared in activity_main.xml
+        btnRecord = (Button) findViewById(R.id.btnRecord);
 
         if(btnTake !=null)
             //listen the event and define the button click activity
@@ -131,6 +139,19 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             });
+        //////////////////////////edit================================================
+        if(btnRecord != null)
+            btnRecord.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if(mIsRecording) {
+                        mMediaRecorder.stop();
+                        mMediaRecorder.release();
+                        mIsRecording = false;
+                    }else{
+                    }
+                }
+            });
         textureView = findViewById(R.id.texture);   //call the View that declared in activity_main.xml
         if(textureView != null){
             textureView.setSurfaceTextureListener(textureListener);}
@@ -145,9 +166,6 @@ public class MainActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter1 =new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,dataSize);
         jpegSizeList.setAdapter(adapter1);
 
-        //devInfo
-        devInfoView = findViewById(R.id.devInfo);
-        //devInfoView.setText("hi");
 
         /** Use characteristics.get() to get Key value of each information
          - LENS_FACING : LENS_FACING_FRONT=0, LENS_FACING_BACK=1, LENS_FACING_EXTERNAL=2
@@ -162,7 +180,6 @@ public class MainActivity extends AppCompatActivity {
                 //throw the key about the needed information using get()
                 dataCameraId.add(characteristics.get(CameraCharacteristics.LENS_FACING));
             }
-            devInfoView.setText(Arrays.toString(manager.getCameraIdList()));
 
         }catch (CameraAccessException e){
             e.printStackTrace();
@@ -173,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Toast.makeText(MainActivity.this,"camera ID : "+dataCameraId.get(position),Toast.LENGTH_SHORT).show();
-                mCameraFacing = (mCameraFacing == Camera.CameraInfo.CAMERA_FACING_BACK)? Camera.CameraInfo.CAMERA_FACING_FRONT:Camera.CameraInfo.CAMERA_FACING_BACK;
+                mCameraFacing = dataCameraId.get(position);
                 dataSize.clear();
                 cameraDevice.close();
                 init();
@@ -244,7 +261,8 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG,"onOpened");
             Log.e(TAG,"iris...onOpened start");
             cameraDevice = camera;
-            createCameraPreview();
+            createCameraPreview();  //startpreview
+            mCameraOpenCloseLock.release();
             Log.e(TAG,"iris...onOpened end");
         }
 
