@@ -24,7 +24,7 @@
             android:id="@+id/devInfo"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:background="#E7FDCC"
+            android:background="#EDEAF3"
             android:layout_weight="2"/>
 
         <LinearLayout
