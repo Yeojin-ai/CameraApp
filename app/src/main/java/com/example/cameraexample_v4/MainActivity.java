@@ -513,7 +513,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         Log.e(TAG,"onPause");
         stopBackgroundThread();
-        cameraDevice.close();
+        //cameraDevice.close();
         super.onPause();
     }
 }
